@@ -6,6 +6,8 @@ git branch -M main
 git remote add origin https://github.com/eduardobaezagomez-cpu/seguimiento-iniciativas.git
 git push -u origin main
 
+.nojekyll
+
 <!DOCTYPE html>
 <html lang="es">
 <head>

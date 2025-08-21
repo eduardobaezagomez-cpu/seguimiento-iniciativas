@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seguimiento de Iniciativas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9fafb; }
+    h1 { text-align: center; color: #1e3a8a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #e5e7eb; }
+    td[contenteditable="true"] { background: #fef9c3; }
+    button { margin: 10px 5px; padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-guardar { background: #2563eb; color: white; }
+    .btn-reset { background: #dc2626; color: white; }
+    .btn-agregar { background: #16a34a; color: white; }
+    canvas { background: white; margin-top: 30px; padding: 20px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>📊 Seguimiento de Iniciativas</h1>
+  <p style="text-align:center">Edita la tabla, agrega iniciativas y observa cómo se actualizan los gráficos automáticamente.</p>
+
+  <!-- Botones -->
+  <div style="text-align:center">
+    <button class="btn-guardar" onclick="guardarDatos()">💾 Guardar y Recalcular</button>
+    <button class="btn-agregar" onclick="agregarFila()">➕ Agregar Iniciativa</button>
+    <button class="btn-reset" onclick="reiniciarDatos()">♻️ Reiniciar Datos</button>
+  </div>
+
+  <!-- Tabla de Iniciativas -->
+  <table id="tablaIniciativas">
+    <thead>
+      <tr>
+        <th>Pilar</th>
+        <th>Ámbito</th>
+        <th>Iniciativa</th>
+        <th>Asignado (USD)</th>
+        <th>Ejecutado</th>
+        <th>FCST</th>
+        <th>Responsable</th>
+        <th>Comentarios</th>
+        <th>Instrumento</th>
+        <th>Proceso</th>
+        <th>Cumplimiento (%)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td contenteditable="true">PERCEPCIÓN DE IMPACTO NEGATIVO</td>
+        <td contenteditable="true">Enap Puertas Abiertas</td>
+        <td contenteditable="true">Programa Puertas Abiertas</td>
+        <td contenteditable="true" data-type="number">16500</td>
+        <td contenteditable="true" data-type="number">4410</td>
+        <td contenteditable="true" data-type="number">16500</td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><progress value="0" max="100"></progress></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Gráficos -->
+  <canvas id="graficoGastos"></canvas>
+  <canvas id="graficoCumplimiento"></canvas>
+
+  <script>
+    // ---- Guardar datos en localStorage ----
+    function guardarDatos() {
+      const tabla = document.querySelector("#tablaIniciativas tbody");
+      let data = [];
+      tabla.querySelectorAll("tr").forEach(tr => {
+        let fila = [];
+        tr.querySelectorAll("td").forEach(td => {
+          if (td.querySelector("input")) {
+            fila.push(td.querySelector("input").checked);
+          } else if (td.querySelector("progress")) {
+            fila.push(td.querySelector("progress").value);
+          } else {
+            fila.push(td.innerText.trim());
+          }
+        });
+        data.push(fila);
+      });
+      localStorage.setItem("iniciativas", JSON.stringify(data));
+      actualizarGraficos();
+    }
+
+    // ---- Cargar datos desde localStorage ----
+    function cargarDatos() {
+      const tabla = document.querySelector("#tablaIniciativas tbody");
+      const data = JSON.parse(localStorage.getItem("iniciativas"));
+      if (data) {
+        tabla.innerHTML = "";
+        data.forEach(fila => {
+          let tr = document.createElement("tr");
+          fila.forEach((celda, i) => {
+            let td = document.createElement("td");
+            if (i === 8 || i === 9) { // columnas de checkboxes
+              let checkbox = document.createElement("input");
+              checkbox.type = "checkbox";
+              checkbox.checked = celda === true;
+              td.appendChild(checkbox);
+            } else if (i === 10) { // barra de progreso
+              let prog = document.createElement("progress");
+              prog.max = 100;
+              prog.value = parseInt(celda) || 0;
+              td.appendChild(prog);
+            } else {
+              td.contentEditable = "true";
+              td.innerText = celda;
+            }
+            tr.appendChild(td);
+          });
+          tabla.appendChild(tr);
+        });
+      }
+    }
+
+    // ---- Reiniciar datos ----
+    function reiniciarDatos() {
+      if (confirm("¿Seguro que quieres reiniciar los datos?")) {
+        localStorage.removeItem("iniciativas");
+        location.reload();
+      }
+    }
+
+    // ---- Agregar una nueva fila ----
+    function agregarFila() {
+      const tabla = document.querySelector("#tablaIniciativas tbody");
+      const nuevaFila = document.createElement("tr");
+      nuevaFila.innerHTML = `
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true" data-type="number">0</td>
+        <td contenteditable="true" data-type="number">0</td>
+        <td contenteditable="true" data-type="number">0</td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><progress value="0" max="100"></progress></td>
+      `;
+      tabla.appendChild(nuevaFila);
+    }
+
+    // ---- Actualizar gráficos ----
+    let ctx1 = document.getElementById("graficoGastos").getContext("2d");
+    let ctx2 = document.getElementById("graficoCumplimiento").getContext("2d");
+    let chartGastos = new Chart(ctx1, {
+      type: "bar",
+      data: { labels: [], datasets: [
+        { label: "Asignado", data: [], backgroundColor: "blue" },
+        { label: "Ejecutado", data: [], backgroundColor: "green" },
+        { label: "FCST", data: [], backgroundColor: "orange" }
+      ]},
+      options: { responsive: true }
+    });
+    let chartCumplimiento = new Chart(ctx2, {
+      type: "bar",
+      data: { labels: [], datasets: [
+        { label: "Cumplimiento (%)", data: [], backgroundColor: "teal" }
+      ]},
+      options: { responsive: true, scales: { y: { max: 100 } } }
+    });
+
+    function actualizarGraficos() {
+      const filas = document.querySelectorAll("#tablaIniciativas tbody tr");
+      let labels = [], asignado = [], ejecutado = [], fcst = [], cumplimiento = [];
+      filas.forEach(tr => {
+        let celdas = tr.querySelectorAll("td");
+        let nombre = celdas[2].innerText || "Iniciativa";
+        let valAsignado = parseFloat(celdas[3].innerText) || 0;
+        let valEjecutado = parseFloat(celdas[4].innerText) || 0;
+        let valFcst = parseFloat(celdas[5].innerText) || 0;
+        let prog = celdas[10].querySelector("progress").value || 0;
+        labels.push(nombre);
+        asignado.push(valAsignado);
+        ejecutado.push(valEjecutado);
+        fcst.push(valFcst);
+        cumplimiento.push(prog);
+      });
+      chartGastos.data.labels = labels;
+      chartGastos.data.datasets[0].data = asignado;
+      chartGastos.data.datasets[1].data = ejecutado;
+      chartGastos.data.datasets[2].data = fcst;
+      chartGastos.update();
+      chartCumplimiento.data.labels = labels;
+      chartCumplimiento.data.datasets[0].data = cumplimiento;
+      chartCumplimiento.update();
+    }
+
+    // ---- Inicializar ----
+    window.onload = function() {
+      cargarDatos();
+      actualizarGraficos();
+    };
+  </script>
+
+</body>
+</html>echo "# seguimiento-iniciativas" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/eduardobaezagomez-cpu/seguimiento-iniciativas.git
+git push -u origin main

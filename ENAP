@@ -1,3 +1,10 @@
+echo "# seguimiento-iniciativas" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/eduardobaezagomez-cpu/seguimiento-iniciativas.git
+git push -u origin main
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -204,10 +211,4 @@
   </script>
 
 </body>
-</html>echo "# seguimiento-iniciativas" >> README.md
-git init
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/eduardobaezagomez-cpu/seguimiento-iniciativas.git
-git push -u origin main
+</html>
